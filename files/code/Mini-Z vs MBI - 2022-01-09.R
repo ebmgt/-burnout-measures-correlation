@@ -5,7 +5,21 @@ version
 citation(package = "base", lib.loc = NULL, auto = NULL)
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 #setwd("../plots")
-getwd()
+#Directory <- getwd()
+
+##* Functions -----
+function_libraries_install <- function(packages){
+  install.packages(setdiff(packages, rownames(installed.packages())))
+  for(package_name in packages)
+  {
+    #library(package_name,character.only=TRUE,quietly=TRUE);
+    library(package_name,character.only=TRUE, quietly = FALSE);
+  }
+}
+##* Essential packages -----
+packages_essential <- c("tcltk",'stringr','openxlsx')
+function_libraries_install(packages_essential)
+
 ##* Graphics --------------------------
 #windows(600, 600, pointsize = 12) # Size 600x600
 devAskNewPage(ask = FALSE)
@@ -17,14 +31,17 @@ xmax <- par("usr")[2] - strwidth("A")
 ymin <- par("usr")[3] + 1.2*strheight("A")
 ymax <- par("usr")[4] - strheight("A")
 # grid.raster(mypng, .3, .3, width=.25)
-##* Libraries------------------------------------
-if (!require('openxlsx')) # Excel
-{
-  install <- tk_messageBox(type = c('okcancel'), "Need to install openxlsx", caption = "Library needed")
-  if (install == 'cancel') {end}
-  install.packages('openxlsx');
-  library('gemtc')
-}
+
+##* Libraries and libraries------------------------------------
+#*** Meta-analysis and positive deviance----
+packages_meta <- c("metafor", #
+                   'meta',   # Meta-analysis
+                   'boot',   # inv.logit to identify deviants
+                   'grid',   # Forest and blobbogram
+                   'gemtc'   # Blobbogram
+)
+function_libraries_install(packages_meta)
+
 if (!require('lme4')) # Mixed effects
 {
   install <- tk_messageBox(type = c('okcancel'), "Need to install lme4", caption = "Library needed")
@@ -39,20 +56,7 @@ if (!require('report')) # Report
   install.packages('report');
   library('report')
 }
-if (!require('meta')) # meta
-{
-  install <- tk_messageBox(type = c('okcancel'), "Need to install meta", caption = "Library needed")
-  if (install == 'cancel') {end}
-  install.packages('meta');
-  library('meta')
-}
-if (!require('grid')) # grid
-{
-  install <- tk_messageBox(type = c('okcancel'), "Need to install grid", caption = "Library needed")
-  if (install == 'cancel') {end}
-  install.packages('grid');
-  library('grid')
-}
+
 ##* Constants declaration -------------------
 `%notin%` <- Negate(`%in%`)
 LF <- "\n"
@@ -86,9 +90,9 @@ text(xmin,ymax-1.1* strheight("A"),adj=c(0,1),R2.label)
 
 ### Data grab (RATES) ===================================
 # co <- read.table("https://data.princeton.edu/eco572/datasets/cohhpop.dat", col.names=c("age","pop"), header=FALSE)
-file.filter   <- matrix(c("Spreadsheets","*.csv;*.xls;*.xlsx","All","*.*"),byrow=TRUE,ncol=2)
+file.filter   <- matrix(c("Spreadsheets","MINI-Z*.csv;MINI-Z*.xls;MINI-Z*.xlsx","All","*.*"),byrow=TRUE,ncol=2)
 filename      <- choose.files(filters = file.filter,caption = "Select data file",index = 1,multi=FALSE)
-file.extension<- substr(filename, nchar(filename) - 2, nchar(filename))
+file.extension<- substr(filename,regexpr("\\.[^\\.]*$", filename)+1, nchar(filename))
 if (file.extension == 'csv'){
   data.import   <- read.csv(filename, header=TRUE, sep=",", na.strings="NA", dec=".", stringsAsFactors=FALSE, strip.white=TRUE)
 }else{
@@ -96,11 +100,15 @@ if (file.extension == 'csv'){
   
 mydata <- data.import
 
+##* ReMove rows or anyone? (left of comma) -------
+mydata <- mydata[!(mydata$Author == '' | is.na(mydata$Author)),]
 # Remove Brady or Yellowless sensitivity analysis?
+mydata2 <- mydata[!(mydata$Author == 'Ong'),]
 #mydata2 <- mydata[!(mydata$Author == 'Brady' | mydata$Author == 'Yellowlees'),]
 
 # Remove overlapping
-mydata <-  mydata[(mydata$Grouping == 'Specialty' | mydata$Grouping == 'All respondents'),]
+# Oops, this removes Trockel and Yellowless
+mydata <-  mydata[(ydata$Grouping == 'All respondents'),]
 
 ## Baseline characeteristics ======
 Brady <- mydata[(mydata$Author == 'Brady'),]
@@ -108,13 +116,16 @@ Brady <- mydata[(mydata$Author == 'Brady'),]
 sum(Brady$Size*Brady$MBI.full/100)/sum(Brady$Size)
 sum(Brady$Size*Brady$Mini.Z/100)/sum(Brady$Size)
 
+##* Table 1 ======
+unique(mydata$Author)
+
 ## REGRESSION Analyses ====================
 ##* Correlation (do not report this R ) ====================
 corr <- cor.test(mydata$Mini.Z, mydata$MBI.full)
 corr$estimate
 corr$estimate^2
 R  = round(corr$estimate,2)
-R2 = corr$estimate^2
+(R2 = corr$estimate^2)
 R2.value <- formatC(R2, digits=2, format="f")
 R2.label <- bquote(R^2 ~ "=" ~ .(R2.value) ~ "%")
 
@@ -131,8 +142,8 @@ R2.label <- bquote(R^2 ~ "=" ~ .(R2.value) ~ "%")
 #a_mixed = lmer(MBI.full  ~ Mini.Z, data = mydata)
 #a_mixed = lmer(MBI.full  ~(1 | Mini.Z), data = mydata)
 #a_mixed = lmer(MBI.full  ~Mini.Z + (1 | Respondents.Source), data = mydata)
-#a_mixed = lmer(MBI.full  ~Mini.Z + (1 | Response.rate), data = mydata)
-a_mixed <- lmer(MBI.full  ~ Mini.Z + (1 | Author), data = mydata) # BEST!!!
+a_mixed = lmer(MBI.full  ~Mini.Z + Response.rate + (1 | Author), data = mydata)
+a_mixed <- lmer(MBI.full  ~ Mini.Z + (1 | Author), data = mydata) # BEST!!! same with REML=T
 (a_mixed.summary <- summary(a_mixed))
 #abline(a_mixed.summary$coefficients[1],a_mixed.summary$coefficients[2])
 #confint(a_mixed)
@@ -140,7 +151,7 @@ a_mixed <- lmer(MBI.full  ~ Mini.Z + (1 | Author), data = mydata) # BEST!!!
 # https://easystats.github.io/report/
 REPORT <- report (a_mixed)
 summary(REPORT)
-(R2REPORT <- as.data.frame(REPORT))
+#(R2REPORT <- as.data.frame(REPORT))
 (R2_Mixed <- round(R2REPORT$Fit[8]*100,1))
 (R2_Fixed <- round(R2REPORT$Fit[9]*100,1))
 (R_Mixed  <- (R2REPORT$Fit[8])^(1/2))
@@ -158,6 +169,11 @@ mydata$Mini.Z.adjusted <- a_mixed.summary$coefficients[1] + mydata$Mini.Z * a_mi
 (R_Fixed <- round(lm.out.summary$adj.r.squared^(1/2),2))
 
 mydata$Mini.Z.adjusted <- lm.out.summary$coefficients[1] + mydata$Mini.Z * lm.out.summary$coefficients[2]
+
+##** Comparing mixed and fixed/linear models -----------------
+AIC(logLik(a_mixed))
+AIC(logLik(lm.out))
+anova(a_mixed, lm.out, test = "Chisq", refit = F)
 
 ## Plot ------------------
 # Study color
@@ -227,15 +243,20 @@ rstudioapi::savePlotAsImage( # Print at 800*plotheight
 
 ## Data grab (CORRELATIONS) ===================================
 # co <- read.table("https://data.princeton.edu/eco572/datasets/cohhpop.dat", col.names=c("age","pop"), header=FALSE)
-file.filter   <- matrix(c("Spreadsheets","*.csv;*.xls;*.xlsx","All","*.*"),byrow=TRUE,ncol=2)
+file.filter   <- matrix(c("Spreadsheets","correl*.csv;correl*.xls;correl*.xlsx","All","*.*"),byrow=TRUE,ncol=2)
 filename      <- choose.files(filters = file.filter,caption = "Select data file",index = 1,multi=FALSE)
-file.extension<- substr(filename, nchar(filename) - 2, nchar(filename))
+file.extension<- substr(filename,regexpr("\\.[^\\.]*$", filename)+1, nchar(filename))
 if (file.extension == 'csv'){
   data.import   <- read.csv(filename, header=TRUE, sep=",", na.strings="NA", dec=".", stringsAsFactors=FALSE, strip.white=TRUE)
 }else{
   data.import   <- read.xlsx(filename)}
 
 data.correlation <- data.import
+
+##* ReMove rows or anyone? (left of comma) -------
+data.correlation <- data.correlation[!(data.correlation$Author == '' | is.na(data.correlation$Author)),]
+# Remove Brady or Yellowless sensitivity analysis?
+mydata2 <- mydata[!(mydata$Author == 'Ong'),]
 
 data.correlation <- data.correlation[!(is.na(data.correlation$Author)),]
 
