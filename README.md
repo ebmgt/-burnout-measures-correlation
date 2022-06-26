@@ -6,6 +6,7 @@ Short url: https://ebmgt.github.io/well-being_measurement/
 * [R code](../master/files/code)
 
 **Results:** Details of the studies included are in the:
+* [Data](../master/files/data)
 * [Plots](../master/files/plots) ([spreadsheets with source data](files/data))
 
 ## Abstract (SGIM National Meeting. Orlando, FL 04/2022)
@@ -22,7 +23,7 @@ We meta-analyzed correlations between measures of the MBI and its subscales with
 
 We meta-analyzed across studies the burnout rates and correlation of the Mini-Z single item with the full MBI by using a linear mixed-effects model with the lmer function of the R package lme4. We used the intercept and coefficient from the mixed-effects model to derive an equation for predicting the MBI from the Mini-Z single item. Using this model, we determined the correction coefficient (R) and two proportions of the variance explained (R2) by the model. T For R2, we used the R package Report to calculate both the total (conditional) R2 and the fixed (marginal) R2. 
 
-**Results: **
+**Results:**
 
 We included 9 studies with a total of 11,376 respondents. The response rate across studies ranged from 7% to 74% with a pooled rate of 33% 
 
