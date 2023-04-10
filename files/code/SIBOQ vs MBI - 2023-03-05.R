@@ -1,4 +1,5 @@
-#This file is best used within R Studio and using the Studio's Document outline for navigation
+#This file is best used within R Studio and 
+#  using R Studio's Document outline for navigation
 # rbadgett@kumc.edu
 ### Start =======================================
 version
@@ -69,7 +70,6 @@ res <- NULL
 res$I2 <- 30.123
 I2.value <- formatC(res$I2, digits=1, format="f")
 I2.label <- bquote(I^2 ~ "=" ~ .(I2.value) ~ "%")
-I2.label
 text(0.25,0.25,I2.label)
 I2.summary.label <- bquote("RE Model ("~ I^2 ~ "= " ~ .(I2.value) ~ "%)")
 text(0.5,0.5,I2.summary.label)
@@ -107,9 +107,9 @@ data.correlation <- data.correlation[!(data.correlation$Author == '' | is.na(dat
 # Remove Brady or Yellowlees sensitivity analysis?
 # mydata2 <- mydata[!(mydata$Author == 'Brady'),]
 
-meta.prop <- meta::metaprop(Respondents, Size, studlab = studlab, subgroup = Language, random = TRUE, hakn = TRUE, data = data.correlation)
-summary(meta.prop)
-meta::forest(meta.prop, sortvar = Year, subgroup = TRUE,  colgap.forest.left = '4mm', print.Q.subgroup = FALSE, print.pval.Q = FALSE, print.I2.ci = TRUE, xlim=c(0,1), print.tau2 = FALSE, fixed = FALSE, xlab=paste("Correlation with ", scale, sep=''))
+#meta.prop <- meta::metaprop(Respondents, Size, studlab = studlab, subgroup = Language, random = TRUE, hakn = TRUE, data = data.correlation)
+#summary(meta.prop)
+#meta::forest(meta.prop, sortvar = Year, subgroup = TRUE,  colgap.forest.left = '4mm', print.Q.subgroup = FALSE, print.pval.Q = FALSE, print.I2.ci = TRUE, xlim=c(0,1), print.tau2 = FALSE, fixed = FALSE, xlab=paste("Correlation with ", scale, sep=''))
 
 
 ##* Parameters -------
@@ -129,9 +129,17 @@ data.correlation <- data.correlation[!(is.na(data.correlation$outcome)),]
 ##* # 02/26/2023: Size replaced with Respondents
 meta.correlation <- meta::metacor(outcome, Respondents, studlab = studlab, subgroup = Language, random = TRUE, hakn = TRUE, data = data.correlation)
 # exclude = Study %in% c('Olson'), 
-
+bob <- (summary(meta.correlation))
+##resid_hetstat = FALSE
+##if both subfroups > 1 then
+##resid_hetstat = TRUE
 ##* Forest plot -----
-meta::forest(meta.correlation, sortvar = Year, subgroup = TRUE,  colgap.forest.left = '4mm', print.Q.subgroup = FALSE, print.pval.Q = FALSE, print.I2.ci = TRUE, xlim=c(0,1), print.tau2 = FALSE, fixed = FALSE, xlab=paste("Correlation with ", scale, sep=''))
+meta::forest(meta.correlation, sortvar = Year, 
+             fixed = FALSE, common = FALSE, random = TRUE, 
+             subgroup = TRUE, print.Q.subgroup = FALSE, 
+             resid.hetstat = resid_hetstat, 
+             print.I2.ci = TRUE, print.tau2 = FALSE, print.pval.Q = FALSE,
+             xlab=paste("Correlation with ", scale, sep=''), colgap.forest.left = '4mm', xlim=c(0,1))
 grid.text(paste("Correlation of the SIBOQ with MBI ", scale,sep=''), 0.5, 0.9, gp = gpar(fontsize = 14, fontface = "bold"))
 
 ##** Export plot------------------------
@@ -205,8 +213,14 @@ if (yes.no == 'Yes')
 
 length(mydata$Gold[!is.na(mydata$Gold) & !is.na(mydata$Mini.Z)])
 
-summary(lmer.out.full) # Only allowing the full MBI as gold standard
-summary(lmer.out.either) # Allowing either the full MBI or the MBI-DI as gold standard
+# Only allowing the full MBI as gold standard
+report(lmer.out.full)
+(lmer.out.full.summary <- summary(lmer.out.full)) # Allowing either the full MBI or the MBI-DI as gold standard
+length(lmer.out.full.summary$residuals)
+# Allowing the full MBI0DI as well for gold standard
+report(lmer.out.either)
+(lmer.out.either.summary <- summary(lmer.out.either)) # Allowing either the full MBI or the MBI-DI as gold standard
+length(lmer.out.either.summary$residuals)
 
 ##** Comparing MBI-FULL vs MBI-DI as good standards -----------------
 # Lower indicates a more parsimonious model, relative to a model fit with a higher AIC
@@ -333,6 +347,7 @@ for(i in 1:nrow(mydata))
   if (mydata$Author[i]=='Brady'){mydata$color[i] <- 'black'}
   if (mydata$Author[i]=='Kemper'){mydata$color[i] <- 'purple'}
   if (mydata$Author[i]=='Yellowlees'){mydata$color[i] <- 'gold'} # yellow
+  if (mydata$Author[i]=='Coate'){mydata$color[i] <- 'gold'}
   if (mydata$Author[i]=='Ong'){mydata$color[i] <- 'gray'}
 }
 # Point size
@@ -421,7 +436,7 @@ text(75, 8,adj=c(0,1), paste0('Observations: ', as.character(length(a_mixed.summ
 mtext(expression(paste(bold("Note: "))), side = 1, line = 4.2,adj=0,cex=1)
 formula <- paste("MBI = ", round(intercept,2), " + ", round(slope,2), " * SIBOQ +/- ", round(CI,2), " (",regression, " regression)", sep='')
 mtext(formula, side = 1, line = 5.2,adj=0,cex=1)
-mtext(expression(paste("Points colors: Brady=black, Kemper=purple; Knox=green; Olson=red; Ong=gray; \nTrockel=teal, Yellowlees=yellow")), side = 1, line = 7.2,adj=0,cex=1)
+mtext(expression(paste("Points colors: Brady=black, Kemper=purple; Knox=green; Olson=red; Ong=gray; \nTrockel=teal, Sierra Sacramento Valley Medical Society (Coate and Yellowlees)=yellow")), side = 1, line = 7.2,adj=0,cex=1)
 #Footer <- paste(Footer,"\n","* Based on rate conversion derived from Olson PMID 30467949",sep='')
 
 ##** Export plot------------------------
@@ -437,7 +452,7 @@ rstudioapi::savePlotAsImage( # Print at 800*plotheight
 # ________-----
 ## 3. CONFOUNDERS REGRESSION ------
 ##* Confounders of mixed regression -------
-# Get your data from the Data Grab at 2. MIXED REGRESSION OF RATES
+# Get your data from the Data Grab at "2. MIXED REGRESSION OF RATES"
 length(mydata$Gold[!is.na(mydata$Gold)])
 
 #** Allow MBI-DI as a gold standard? -----
@@ -658,16 +673,22 @@ R.label <- bquote(R ~ "=" ~ .(R_Fixed ) ~ "")
 (slope       <- lm.out.summary$coefficients[2])
 abline(intercept, slope)
 
+#** legend ---------
+legend("topleft", adj = 0, xjust = 1, inset = c(-0.01,0), c(paste("Regression line (", regression,")", sep='')), pch = NULL, pt.bg = "white", bty = "n", border = "white", lty=c("solid"), col=c("black"))
+# values
+text(75,20,adj=c(0,1),bquote(R^2 ~ " (fixed) = " ~ .(R2_Fixed) ~ "%"))
+text(75,14,adj=c(0,1),bquote(R ~ " (fixed) = " ~ .(R.label)))
+#text(80,10,adj=c(0,1),bquote(R   ~ " (fixed) = " ~ .(R_Fixed)))
+text(75, 8,adj=c(0,1), paste0('Observations: ', as.character(length(a_mixed.summary$residuals)))  )
+
 ##** Notes -----
 mtext(expression(paste(bold("Notes: "))), side = 1, line = 4,adj=0,cex=1)
-mtext(R2.label, side = 1, line = 5,adj=0,cex=1)
-mtext(R.label, side = 1, line = 6,adj=0,cex=1)
-mtext("References: Olson, 2019 (red); Trockel, 2018 (teal)", side = 1, line = 7,adj=0,cex=1)
+mtext("References: Olson, 2019 (red); Trockel, 2018 (teal)", side = 1, line = 5,adj=0,cex=1)
 
 #Footer <- paste(Footer,"\n","* Based on rate conversion derived from Olson PMID 30467949",sep='')
 
 ##** Export plot------------------------
-PlotName <- paste('Appendix Figure 1. MBI-DI predicting MBI (', regression, ') - ', sep='')
+PlotName <- paste('eFigure 1. MBI-DI predicting MBI (', regression, ') - ', sep='')
 Directory <- '../Plots/'
 
 (current.date <- as.character(strftime (Sys.time(), format="%Y-%m-%d", tz="", usetz=FALSE)))
