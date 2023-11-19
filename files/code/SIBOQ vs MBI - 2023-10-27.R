@@ -233,9 +233,13 @@ if (yes.no == 'Yes') # Allow both MBI-FULL and MBI-DI
   writeLines("\nABOUT mydata2 WHICH ALLOWS EITHER FULL OR MBI-DI:")
   cat("\n", sum(mydata2$Size), "respondents in: ",length(unique(mydata2$Author)), " studies containing: ", nrow(mydata2),"comparisons from: " , unique(mydata2$Author))
   lmer.out.either <- lmer(Gold  ~ Mini.Z + (1 | Author), data = mydata2) # BEST!!! same with REML=T
-  lm.out.either <- lm(Gold  ~ Mini.Z, data = mydata2)
-  summary(lmer.out.either)
+  (temp <- summary(lmer.out.either))
+  temp$adj.r.squared
+  temp$adj.r.squared^(1/2)
   REPORT <- report(lmer.out.either)
+  lm.out.either <- lm(Gold  ~ Mini.Z, data = mydata2)
+  summary(lm.out.either)
+  # RUN AND CREATE REPORT< THEN GO BELOW
   REPORT <- report(lm.out.either)
   AIC(logLik(lmer.out.either))
 }else{  # Allow ONLY MBI-FULL and EXCLUDE MBI-DI
@@ -607,7 +611,8 @@ glm.out <- glm(Gold  ~ Mini.Z + subscale.ratio, data = mydata.confounders)
   library(domir)
   summary <- NULL
   # OLD dominance analysis; da <-dominanceAnalysis(lm.out1)
-  # NEW dominance analysis
+  # NEW dominance analysis.
+  # No change form 04/2023 as Brady overall groukkpo removal and Song addition not relevant.
   dominance <- domir(Gold  ~ Mini.Z + subscale.ratio, lm_r2, data = mydata.confounders)
   lm.out <- lm(Gold  ~ Mini.Z, data = mydata.confounders)
   lm.out <- lm(Gold  ~ Mini.Z + subscale.ratio, data = mydata.confounders)
@@ -622,6 +627,7 @@ glm.out <- glm(Gold  ~ Mini.Z + subscale.ratio, data = mydata.confounders)
         data = mydata.confounders)
   summary(domin.out)
   summary(lm.out)["r.squared"]
+  domin.out$General_Dominance
 (glm.out2 <- glm(glm.out$residuals ~ mydata.confounders$subscale.ratio)) 
 fitted(glm.out)
 summary <- summary(glm.out)
